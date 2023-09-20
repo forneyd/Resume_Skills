@@ -1,0 +1,680 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r, package}
+#install.packages('tidyverse')
+#library(tidyverse)
+ #install.packages("devtools")
+#devtools::install_github("r-lib/conflicted")
+#library(conflicted)
+#conflicts_prefer(dplyr::filter)
+#install.packages("knitr")
+#install.packages("tinytex")
+#tinytex::install_tinytex()
+#tinytex:::install_prebuilt()
+#library(knitr)
+#rmarkdown::render("RCoding_Year_3.Rmd")
+#install.packages("effsize") # Delete the hashtag symbol to run these package downloads if this is your first time running this in R on this computer.
+```
+
+```{r,  Processing Data}
+# Load the required library for reading Excel files
+library(readxl)
+
+# Load the data from the Excel file
+Nform_dataY3 <- read_excel("Y3Q3_DATA.xlsx", sheet = 1) #Make sure the data set is listed the files tab to the right of the window. If not go to "Session", then "Set Working Directory", then "Choose Directory". Set the directory to where you have the new data saved. Change the name of the file in the code from "Y3Q3_NFORM.Xlsx" to the new name of the file. Be sure to use the excel file and include the .xlsx ending.
+
+# Print the loaded data frame
+print(Nform_dataY3)
+
+# Select columns to keep
+columns_to_keep <- c(
+  'Client ID', 'Enrollment Date', 'Applicant Characteristics Survey Completion Date',
+  'Entrance Survey Completion Date', 'Exit Survey Completion Date', 'ACS-Gender', 'ACS-Age',
+  'ENT-Mar Feel Love', 'ENT-Mar Living Together Same', 'ENT-Couples Cheat', 'ENT-Couples Call Names',
+  'ENT-Couples Threaten', 'ENT-Couples Hit', 'ENT-Couples Encourage', 'ENT-Couples Spend Time',
+  'ENT-Couples Fear', 'ENT-Rel Talk Imp', 'ENT-Rel Talk Feels', 'ENT-Rel Talk Probs', 'ENT-Rel Deserv Hit',
+  'ENT-Rel Phys Violence', 'ENT-Rel Date Violence', 'ENT-Rel Afraid', 'ENT-Sex Attracted', 'ENT-Sex Hard Say No',
+  'ENT-Deal Conflicts', 'ENT-Make Rel Last', 'ENT-Stable Long Term Rel', 'ENT-Skills Lasting Rel',
+  'ENT-Warn Bad Rel', 'ENT-Rec Warn Bad', 'ENT-Avoid Fight', 'ENT-Listening Opinion', 'ENT-Working Probs',
+  'ENT-Boy Girlfriend Feel Good', 'ENT-Boy Girlfriend Pressure', 'ENT-Boy Girlfriend Control',
+  'ENT-Boy Girlfriend Look Bad', 'ENT-Boy Girlfriend Put Down', 'ENT-Boy Girlfriend Insults',
+  'ENT-Boy Girlfriend Keep Feels', 'ENT-Boy Girlfriend Discuss', 'ENT-Boy Girlfriend Hit', 'ENT-Boy Girlfriend Argue',
+  'ENT-Boy Girlfriend Yell', 'ENT-Boy Girlfriend Silent', 'ENT-Boy Girlfriend Count On',
+  'ENT-Boy Girlfriend Talk Matter', 'ENT-Boy Girlfriend Share Feels', 'EXIT-Mar Feel Love',
+  'EXIT-Mar Living Together Same', 'EXIT-Couples Cheat', 'EXIT-Couples Call Names', 'EXIT-Couples Threaten',
+  'EXIT-Couples Hit', 'EXIT-Couples Encourage', 'EXIT-Couples Spend Time', 'EXIT-Couples Fear', 'EXIT-Rel Talk Imp',
+  'EXIT-Rel Talk Feels', 'EXIT-Rel Talk Probs', 'EXIT-Rel Deserv Hit', 'EXIT-Rel Phys Violence',
+  'EXIT-Rel Date Violence', 'EXIT-Rel Afraid', 'EXIT-Since Prog End Emotional', 'EXIT-Since Prog End Not Working',
+  'EXIT-Since Prog End Physical', 'EXIT-Sex Attracted', 'EXIT-Sex Hard Say No', 'ENT-Sex Can Say No','EXIT-Sex Can Say No',
+  'EXIT-Deal Conflicts', 'EXIT-Make Rel Last', 'EXIT-Stable Long Term Rel', 'EXIT-Skills Lasting Rel',
+  'EXIT-Warn Bad Rel', 'EXIT-Rec Warn Bad', 'EXIT-Avoid Fight', 'EXIT-Listening Opinion', 'EXIT-Working Probs',
+  'EXIT-Boy Girlfriend Feel Good', 'EXIT-Boy Girlfriend Pressure', 'EXIT-Boy Girlfriend Control',
+  'EXIT-Boy Girlfriend Look Bad', 'EXIT-Boy Girlfriend Put Down', 'EXIT-Boy Girlfriend Insults',
+  'EXIT-Boy Girlfriend Keep Feels', 'EXIT-Boy Girlfriend Discuss', 'EXIT-Boy Girlfriend Hit',
+  'EXIT-Boy Girlfriend Argue', 'EXIT-Boy Girlfriend Yell', 'EXIT-Boy Girlfriend Silent',
+  'EXIT-Boy Girlfriend Count On', 'EXIT-Boy Girlfriend Talk Matter', 'EXIT-Boy Girlfriend Share Feels','EXIT-Since Prog End Emotional',	'EXIT-Since Prog End Not Working',	'EXIT-Since Prog End Physical', 'EXIT-Sinc Prog Rel Healthy', 'EXIT-Since Prog Learned Skills', 'EXIT-Since Prog Use Skills', 'EXIT-Prog Helpful'
+)
+
+# Create a new data frame with only the specified columns
+Nform_dataY3 <- Nform_dataY3[columns_to_keep]
+
+# Print the resulting data frame
+head(Nform_dataY3)
+
+# Convert 'Enrollment Date' to a Date class
+Nform_dataY3$'Enrollment Date' <- as.Date(Nform_dataY3$'Enrollment Date', format = "%m/%d/%Y")
+
+# Define date ranges for grant years
+grant_years <- list(
+  Year1 = c("2020-10-01", "2021-09-30"),
+  Year2 = c("2021-10-01", "2022-09-30"),
+  Year3 = c("2022-10-01", "2023-09-30"),
+  Y3Q4 = c("2023-07-01", "2023-09-30"),
+  Year4 = c("2023-10-01", "2024-09-30"),
+  Year5 = c("2024-10-01", "2025-09-30")
+)
+
+# Create separate data frames for each grant year
+grant_year_dfs <- list()
+
+for (year in names(grant_years)) {
+  start_date <- as.Date(grant_years[[year]][1])
+  end_date <- as.Date(grant_years[[year]][2])
+  grant_year_dfs[[year]] <- Nform_dataY3[Nform_dataY3$'Enrollment Date' >= start_date &
+                                           Nform_dataY3$'Enrollment Date' <= end_date, ]
+}
+
+# Access individual data frames for each grant year
+year_1_df <- grant_year_dfs$Year1
+year_2_df <- grant_year_dfs$Year2
+year_3_df <- grant_year_dfs$Year3
+year_3Q4_df <- grant_year_dfs$Y3Q4
+year_4_df <- grant_year_dfs$Year4
+year_5_df <- grant_year_dfs$Year5
+
+# Print the number of rows in each grant year data frame
+for (year in names(grant_year_dfs)) {
+  cat(paste(year, ": ", nrow(grant_year_dfs[[year]]), " rows\n"))
+}
+
+```
+
+```{r, Year 1}
+
+## YEAR 1
+
+print(year_1_df)
+
+### Year 1 Pre/Post Averages
+
+Y1variables <- c('ENT-Mar Feel Love', 'EXIT-Mar Feel Love', 'ENT-Mar Living Together Same', 'EXIT-Mar Living Together Same','ENT-Couples Cheat','EXIT-Couples Cheat', 'ENT-Couples Call Names','EXIT-Couples Call Names', 'ENT-Couples Threaten', 'EXIT-Couples Threaten','ENT-Couples Hit', 'EXIT-Couples Hit','ENT-Couples Encourage', 'EXIT-Couples Encourage','ENT-Couples Spend Time','EXIT-Couples Spend Time', 'ENT-Couples Fear', 'EXIT-Couples Fear','ENT-Rel Talk Imp', 'EXIT-Rel Talk Imp','ENT-Rel Talk Feels', 'EXIT-Rel Talk Feels','ENT-Rel Talk Probs','EXIT-Rel Talk Probs', 'ENT-Rel Deserv Hit',  'EXIT-Rel Deserv Hit','ENT-Rel Phys Violence', 'EXIT-Rel Phys Violence', 'ENT-Rel Date Violence', 'EXIT-Rel Date Violence', 'ENT-Rel Afraid', 'EXIT-Rel Afraid','ENT-Sex Attracted', 'EXIT-Sex Attracted','ENT-Sex Hard Say No', 'EXIT-Sex Hard Say No','ENT-Sex Can Say No','EXIT-Sex Can Say No', 'ENT-Deal Conflicts',  'EXIT-Deal Conflicts','ENT-Make Rel Last', 'EXIT-Make Rel Last','ENT-Stable Long Term Rel', 'EXIT-Stable Long Term Rel','ENT-Skills Lasting Rel','EXIT-Skills Lasting Rel', 'ENT-Warn Bad Rel','EXIT-Warn Bad Rel', 'ENT-Rec Warn Bad', 'EXIT-Rec Warn Bad','ENT-Avoid Fight','EXIT-Avoid Fight', 'ENT-Listening Opinion', 'EXIT-Listening Opinion','ENT-Working Probs', 'EXIT-Working Probs','ENT-Boy Girlfriend Feel Good',  'EXIT-Boy Girlfriend Feel Good','ENT-Boy Girlfriend Pressure', 'EXIT-Boy Girlfriend Pressure','ENT-Boy Girlfriend Control', 'EXIT-Boy Girlfriend Control','ENT-Boy Girlfriend Look Bad', 'EXIT-Boy Girlfriend Look Bad','ENT-Boy Girlfriend Put Down', 'EXIT-Boy Girlfriend Put Down','ENT-Boy Girlfriend Insults','EXIT-Boy Girlfriend Insults', 'ENT-Boy Girlfriend Keep Feels','EXIT-Boy Girlfriend Keep Feels', 'ENT-Boy Girlfriend Discuss',  'EXIT-Boy Girlfriend Discuss','ENT-Boy Girlfriend Hit', 'EXIT-Boy Girlfriend Hit','ENT-Boy Girlfriend Argue', 'EXIT-Boy Girlfriend Argue', 'ENT-Boy Girlfriend Yell','EXIT-Boy Girlfriend Yell', 'ENT-Boy Girlfriend Silent', 'EXIT-Boy Girlfriend Silent','ENT-Boy Girlfriend Count On', 'EXIT-Boy Girlfriend Count On','ENT-Boy Girlfriend Talk Matter','EXIT-Boy Girlfriend Talk Matter', 'ENT-Boy Girlfriend Share Feels', 'EXIT-Boy Girlfriend Share Feels','EXIT-Sinc Prog Rel Healthy', 'EXIT-Since Prog Learned Skills', 'EXIT-Since Prog Use Skills', 'EXIT-Prog Helpful','EXIT-Since Prog End Emotional',	'EXIT-Since Prog End Not Working','EXIT-Since Prog End Physical')
+
+Y1_mean <- colMeans(year_1_df[Y1variables], na.rm = TRUE)
+
+print(Y1_mean)
+
+### Code for Year 1 Frequency Percentages
+
+
+Pro_Rel_Healthy_value_counts <- table(year_1_df$'EXIT-Sinc Prog Rel Healthy')
+total_count <- sum(!is.na(year_1_df$'EXIT-Sinc Prog Rel Healthy'))
+frequency_percentages <- (Pro_Rel_Healthy_value_counts / total_count) * 100
+print(Pro_Rel_Healthy_value_counts)
+print(frequency_percentages)
+
+Pro_Learn_Skills_value_counts <- table(year_1_df$'EXIT-Since Prog Learned Skills')
+total_count <- sum(!is.na(year_1_df$'EXIT-Since Prog Learned Skills'))
+frequency_percentages <- (Pro_Learn_Skills_value_counts / total_count) * 100
+print(Pro_Learn_Skills_value_counts)
+print(frequency_percentages)
+
+Pro_Use_Skills_value_counts <- table(year_1_df$'EXIT-Since Prog Use Skills')
+total_count <- sum(!is.na(year_1_df$'EXIT-Since Prog Use Skills'))
+frequency_percentages <- (Pro_Use_Skills_value_counts / total_count) * 100
+print(Pro_Use_Skills_value_counts)
+print(frequency_percentages)
+
+Pro_Helpful_value_counts <- table(year_1_df$'EXIT-Prog Helpful')
+total_count <- sum(!is.na(year_1_df$'EXIT-Prog Helpful'))
+frequency_percentages <- (Pro_Helpful_value_counts / total_count) * 100
+print(Pro_Helpful_value_counts)
+print(frequency_percentages)
+
+
+
+### Code for Descriptives
+
+summary(year_1_df)
+
+### Year 1 T-Test
+
+t.test(year_1_df$'ENT-Mar Feel Love', year_1_df$'EXIT-Mar Feel Love', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Mar Living Together Same', year_1_df$'EXIT-Mar Living Together Same', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Couples Cheat', year_1_df$'EXIT-Couples Cheat', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Couples Call Names', year_1_df$'EXIT-Couples Call Names', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Boy Girlfriend Hit', year_1_df$'EXIT-Boy Girlfriend Hit', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Couples Threaten', year_1_df$'EXIT-Couples Threaten', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Couples Encourage', year_1_df$'EXIT-Couples Encourage', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Couples Spend Time', year_1_df$'EXIT-Couples Spend Time', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Couples Fear', year_1_df$'EXIT-Couples Fear', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Rel Talk Imp', year_1_df$'EXIT-Rel Talk Imp', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Rel Talk Feels', year_1_df$'EXIT-Rel Talk Feels', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Rel Talk Probs', year_1_df$'EXIT-Rel Talk Probs', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Rel Deserv Hit', year_1_df$'EXIT-Rel Deserv Hit', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Rel Phys Violence', year_1_df$'EXIT-Rel Phys Violence', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Rel Date Violence', year_1_df$'EXIT-Rel Date Violence', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Rel Afraid', year_1_df$'EXIT-Rel Afraid', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Sex Attracted', year_1_df$'EXIT-Sex Attracted', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Sex Hard Say No', year_1_df$'EXIT-Sex Hard Say No', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Deal Conflicts', year_1_df$'EXIT-Deal Conflicts', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Make Rel Last', year_1_df$'EXIT-Make Rel Last', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Skills Lasting Rel', year_1_df$'EXIT-Skills Lasting Rel', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Warn Bad Rel', year_1_df$'EXIT-Warn Bad Rel', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Rec Warn Bad', year_1_df$'EXIT-Rec Warn Bad', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Avoid Fight', year_1_df$'EXIT-Avoid Fight', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Listening Opinion', year_1_df$'EXIT-Listening Opinion', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Working Probs', year_1_df$'EXIT-Working Probs', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Boy Girlfriend Feel Good', year_1_df$'EXIT-Boy Girlfriend Feel Good', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Boy Girlfriend Pressure', year_1_df$'EXIT-Boy Girlfriend Pressure', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Boy Girlfriend Control', year_1_df$'EXIT-Boy Girlfriend Control', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Boy Girlfriend Look Bad', year_1_df$'EXIT-Boy Girlfriend Look Bad', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Boy Girlfriend Put Down', year_1_df$'EXIT-Boy Girlfriend Put Down', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Boy Girlfriend Insults', year_1_df$'EXIT-Boy Girlfriend Insults', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Boy Girlfriend Insults', year_1_df$'EXIT-Boy Girlfriend Insults', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Boy Girlfriend Keep Feels', year_1_df$'EXIT-Boy Girlfriend Keep Feels', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Boy Girlfriend Discuss', year_1_df$'EXIT-Boy Girlfriend Discuss', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Boy Girlfriend Hit', year_1_df$'EXIT-Boy Girlfriend Hit', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Boy Girlfriend Hit', year_1_df$'EXIT-Boy Girlfriend Hit', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Boy Girlfriend Argue', year_1_df$'EXIT-Boy Girlfriend Argue', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Boy Girlfriend Yell', year_1_df$'ENT-Boy Girlfriend Yell', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Boy Girlfriend Silent', year_1_df$'EXIT-Boy Girlfriend Silent', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Boy Girlfriend Count On', year_1_df$'EXIT-Boy Girlfriend Count On', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Boy Girlfriend Talk Matter', year_1_df$'EXIT-Boy Girlfriend Talk Matter', na.rm = TRUE, paired = TRUE)
+
+t.test(year_1_df$'ENT-Boy Girlfriend Share Feels', year_1_df$'EXIT-Boy Girlfriend Share Feels', na.rm = TRUE, paired = TRUE)
+
+```
+
+
+```{r, Year 2}
+# Load required libraries
+library(dplyr)
+library(tidyr)
+library(stats)
+
+# Define Y2variables
+Y2variables <- c('ENT-Mar Feel Love', 'EXIT-Mar Feel Love', 'ENT-Mar Living Together Same', 'EXIT-Mar Living Together Same','ENT-Couples Cheat','EXIT-Couples Cheat', 'ENT-Couples Call Names','EXIT-Couples Call Names', 'ENT-Couples Threaten', 'EXIT-Couples Threaten','ENT-Couples Hit', 'EXIT-Couples Hit','ENT-Couples Encourage', 'EXIT-Couples Encourage','ENT-Couples Spend Time','EXIT-Couples Spend Time', 'ENT-Couples Fear', 'EXIT-Couples Fear','ENT-Rel Talk Imp', 'EXIT-Rel Talk Imp','ENT-Rel Talk Feels', 'EXIT-Rel Talk Feels','ENT-Rel Talk Probs','EXIT-Rel Talk Probs', 'ENT-Rel Deserv Hit',  'EXIT-Rel Deserv Hit','ENT-Rel Phys Violence', 'EXIT-Rel Phys Violence', 'ENT-Rel Date Violence', 'EXIT-Rel Date Violence', 'ENT-Rel Afraid', 'EXIT-Rel Afraid','ENT-Sex Attracted', 'EXIT-Sex Attracted','ENT-Sex Hard Say No', 'EXIT-Sex Hard Say No','ENT-Sex Can Say No','EXIT-Sex Can Say No', 'ENT-Deal Conflicts',  'EXIT-Deal Conflicts','ENT-Make Rel Last', 'EXIT-Make Rel Last','ENT-Stable Long Term Rel', 'EXIT-Stable Long Term Rel','ENT-Skills Lasting Rel','EXIT-Skills Lasting Rel', 'ENT-Warn Bad Rel','EXIT-Warn Bad Rel', 'ENT-Rec Warn Bad', 'EXIT-Rec Warn Bad','ENT-Avoid Fight','EXIT-Avoid Fight', 'ENT-Listening Opinion', 'EXIT-Listening Opinion','ENT-Working Probs', 'EXIT-Working Probs','ENT-Boy Girlfriend Feel Good',  'EXIT-Boy Girlfriend Feel Good','ENT-Boy Girlfriend Pressure', 'EXIT-Boy Girlfriend Pressure','ENT-Boy Girlfriend Control', 'EXIT-Boy Girlfriend Control','ENT-Boy Girlfriend Look Bad', 'EXIT-Boy Girlfriend Look Bad','ENT-Boy Girlfriend Put Down', 'EXIT-Boy Girlfriend Put Down','ENT-Boy Girlfriend Insults','EXIT-Boy Girlfriend Insults', 'ENT-Boy Girlfriend Keep Feels','EXIT-Boy Girlfriend Keep Feels', 'ENT-Boy Girlfriend Discuss',  'EXIT-Boy Girlfriend Discuss','ENT-Boy Girlfriend Hit', 'EXIT-Boy Girlfriend Hit','ENT-Boy Girlfriend Argue', 'EXIT-Boy Girlfriend Argue', 'ENT-Boy Girlfriend Yell','EXIT-Boy Girlfriend Yell', 'ENT-Boy Girlfriend Silent', 'EXIT-Boy Girlfriend Silent','ENT-Boy Girlfriend Count On', 'EXIT-Boy Girlfriend Count On','ENT-Boy Girlfriend Talk Matter','EXIT-Boy Girlfriend Talk Matter', 'ENT-Boy Girlfriend Share Feels', 'EXIT-Boy Girlfriend Share Feels','EXIT-Sinc Prog Rel Healthy', 'EXIT-Since Prog Learned Skills', 'EXIT-Since Prog Use Skills', 'EXIT-Prog Helpful','EXIT-Since Prog End Emotional',	'EXIT-Since Prog End Not Working','EXIT-Since Prog End Physical')
+
+## Calculate Y2_mean
+Y2_mean <- colMeans(year_2_df[Y2variables], na.rm = TRUE)
+
+## Print Y2_mean
+print(Y2_mean)
+
+## Describe year_2_df
+summary(year_2_df)
+
+### Code for Year 2 Frequency Percentages
+
+Pro_Rel_Healthy_value_counts <- table(year_2_df$'EXIT-Sinc Prog Rel Healthy')
+total_count <- sum(!is.na(year_2_df$'EXIT-Sinc Prog Rel Healthy'))
+frequency_percentages <- (Pro_Rel_Healthy_value_counts / total_count) * 100
+print(Pro_Rel_Healthy_value_counts)
+print(frequency_percentages)
+
+Pro_Learn_Skills_value_counts <- table(year_2_df$'EXIT-Since Prog Learned Skills')
+total_count <- sum(!is.na(year_2_df$'EXIT-Since Prog Learned Skills'))
+frequency_percentages <- (Pro_Learn_Skills_value_counts / total_count) * 100
+print(Pro_Learn_Skills_value_counts)
+print(frequency_percentages)
+
+Pro_Use_Skills_value_counts <- table(year_2_df$'EXIT-Since Prog Use Skills')
+total_count <- sum(!is.na(year_2_df$'EXIT-Since Prog Use Skills'))
+frequency_percentages <- (Pro_Use_Skills_value_counts / total_count) * 100
+print(Pro_Use_Skills_value_counts)
+print(frequency_percentages)
+
+Pro_Helpful_value_counts <- table(year_2_df$'EXIT-Prog Helpful')
+total_count <- sum(!is.na(year_2_df$'EXIT-Prog Helpful'))
+frequency_percentages <- (Pro_Helpful_value_counts / total_count) * 100
+print(Pro_Helpful_value_counts)
+print(frequency_percentages)
+
+
+# Year 2 T-Test
+t.test(year_2_df$'ENT-Mar Feel Love', year_2_df$'EXIT-Mar Feel Love', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Mar Living Together Same', year_2_df$'EXIT-Mar Living Together Same', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Couples Cheat', year_2_df$'EXIT-Couples Cheat', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Couples Call Names', year_2_df$'EXIT-Couples Call Names', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Boy Girlfriend Hit', year_2_df$'EXIT-Boy Girlfriend Hit', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Couples Threaten', year_2_df$'EXIT-Couples Threaten', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Couples Encourage', year_2_df$'EXIT-Couples Encourage', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Couples Spend Time', year_2_df$'EXIT-Couples Spend Time', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Couples Fear', year_2_df$'EXIT-Couples Fear', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Rel Talk Imp', year_2_df$'EXIT-Rel Talk Imp', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Rel Talk Feels', year_2_df$'EXIT-Rel Talk Feels', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Rel Talk Probs', year_2_df$'EXIT-Rel Talk Probs', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Rel Deserv Hit', year_2_df$'EXIT-Rel Deserv Hit', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Rel Phys Violence', year_2_df$'EXIT-Rel Phys Violence', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Rel Date Violence', year_2_df$'EXIT-Rel Date Violence', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Rel Afraid', year_2_df$'EXIT-Rel Afraid', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Sex Attracted', year_2_df$'EXIT-Sex Attracted', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Sex Hard Say No', year_2_df$'EXIT-Sex Hard Say No', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Deal Conflicts', year_2_df$'EXIT-Deal Conflicts', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Make Rel Last', year_2_df$'EXIT-Make Rel Last', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Skills Lasting Rel', year_2_df$'EXIT-Skills Lasting Rel', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Warn Bad Rel', year_2_df$'EXIT-Warn Bad Rel', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Rec Warn Bad', year_2_df$'EXIT-Rec Warn Bad', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Avoid Fight', year_2_df$'EXIT-Avoid Fight', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Listening Opinion', year_2_df$'EXIT-Listening Opinion', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Working Probs', year_2_df$'EXIT-Working Probs', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Boy Girlfriend Feel Good', year_2_df$'EXIT-Boy Girlfriend Feel Good', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Boy Girlfriend Pressure', year_2_df$'EXIT-Boy Girlfriend Pressure', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Boy Girlfriend Control', year_2_df$'EXIT-Boy Girlfriend Control', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Boy Girlfriend Look Bad', year_2_df$'EXIT-Boy Girlfriend Look Bad', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Boy Girlfriend Put Down', year_2_df$'EXIT-Boy Girlfriend Put Down', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Boy Girlfriend Insults', year_2_df$'EXIT-Boy Girlfriend Insults', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Boy Girlfriend Insults', year_2_df$'EXIT-Boy Girlfriend Insults', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Boy Girlfriend Keep Feels', year_2_df$'EXIT-Boy Girlfriend Keep Feels', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Boy Girlfriend Discuss', year_2_df$'EXIT-Boy Girlfriend Discuss', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Boy Girlfriend Hit', year_2_df$'EXIT-Boy Girlfriend Hit', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Boy Girlfriend Hit', year_2_df$'EXIT-Boy Girlfriend Hit', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Boy Girlfriend Argue', year_2_df$'EXIT-Boy Girlfriend Argue', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Boy Girlfriend Yell', year_2_df$'ENT-Boy Girlfriend Yell', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Boy Girlfriend Silent', year_2_df$'EXIT-Boy Girlfriend Silent', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Boy Girlfriend Count On', year_2_df$'EXIT-Boy Girlfriend Count On', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Boy Girlfriend Talk Matter', year_2_df$'EXIT-Boy Girlfriend Talk Matter', na.rm = TRUE, paired = TRUE)
+
+t.test(year_2_df$'ENT-Boy Girlfriend Share Feels', year_2_df$'EXIT-Boy Girlfriend Share Feels', na.rm = TRUE, paired = TRUE)
+```
+
+```{r, Year 3}
+# Define Y3variables
+Y3variables <- c('ENT-Mar Feel Love', 'EXIT-Mar Feel Love', 'ENT-Mar Living Together Same', 'EXIT-Mar Living Together Same','ENT-Couples Cheat','EXIT-Couples Cheat', 'ENT-Couples Call Names','EXIT-Couples Call Names', 'ENT-Couples Threaten', 'EXIT-Couples Threaten','ENT-Couples Hit', 'EXIT-Couples Hit','ENT-Couples Encourage', 'EXIT-Couples Encourage','ENT-Couples Spend Time','EXIT-Couples Spend Time', 'ENT-Couples Fear', 'EXIT-Couples Fear','ENT-Rel Talk Imp', 'EXIT-Rel Talk Imp','ENT-Rel Talk Feels', 'EXIT-Rel Talk Feels','ENT-Rel Talk Probs','EXIT-Rel Talk Probs', 'ENT-Rel Deserv Hit',  'EXIT-Rel Deserv Hit','ENT-Rel Phys Violence', 'EXIT-Rel Phys Violence', 'ENT-Rel Date Violence', 'EXIT-Rel Date Violence', 'ENT-Rel Afraid', 'EXIT-Rel Afraid','ENT-Sex Attracted', 'EXIT-Sex Attracted','ENT-Sex Hard Say No', 'EXIT-Sex Hard Say No','ENT-Sex Can Say No','EXIT-Sex Can Say No', 'ENT-Deal Conflicts',  'EXIT-Deal Conflicts','ENT-Make Rel Last', 'EXIT-Make Rel Last','ENT-Stable Long Term Rel', 'EXIT-Stable Long Term Rel','ENT-Skills Lasting Rel','EXIT-Skills Lasting Rel', 'ENT-Warn Bad Rel','EXIT-Warn Bad Rel', 'ENT-Rec Warn Bad', 'EXIT-Rec Warn Bad','ENT-Avoid Fight','EXIT-Avoid Fight', 'ENT-Listening Opinion', 'EXIT-Listening Opinion','ENT-Working Probs', 'EXIT-Working Probs','ENT-Boy Girlfriend Feel Good',  'EXIT-Boy Girlfriend Feel Good','ENT-Boy Girlfriend Pressure', 'EXIT-Boy Girlfriend Pressure','ENT-Boy Girlfriend Control', 'EXIT-Boy Girlfriend Control','ENT-Boy Girlfriend Look Bad', 'EXIT-Boy Girlfriend Look Bad','ENT-Boy Girlfriend Put Down', 'EXIT-Boy Girlfriend Put Down','ENT-Boy Girlfriend Insults','EXIT-Boy Girlfriend Insults', 'ENT-Boy Girlfriend Keep Feels','EXIT-Boy Girlfriend Keep Feels', 'ENT-Boy Girlfriend Discuss',  'EXIT-Boy Girlfriend Discuss','ENT-Boy Girlfriend Hit', 'EXIT-Boy Girlfriend Hit','ENT-Boy Girlfriend Argue', 'EXIT-Boy Girlfriend Argue', 'ENT-Boy Girlfriend Yell','EXIT-Boy Girlfriend Yell', 'ENT-Boy Girlfriend Silent', 'EXIT-Boy Girlfriend Silent','ENT-Boy Girlfriend Count On', 'EXIT-Boy Girlfriend Count On','ENT-Boy Girlfriend Talk Matter','EXIT-Boy Girlfriend Talk Matter', 'ENT-Boy Girlfriend Share Feels', 'EXIT-Boy Girlfriend Share Feels','EXIT-Sinc Prog Rel Healthy', 'EXIT-Since Prog Learned Skills', 'EXIT-Since Prog Use Skills', 'EXIT-Prog Helpful','EXIT-Since Prog End Emotional',	'EXIT-Since Prog End Not Working','EXIT-Since Prog End Physical')
+
+# Calculate Y3_mean
+Y3_mean <- colMeans(year_3_df[Y3variables], na.rm = TRUE)
+
+# Print Y3_mean
+print(Y3_mean)
+
+# Describe year_3_df
+summary(year_3_df)
+
+### Code for Year 3 Frequency Percentages
+
+Pro_Rel_Healthy_value_counts <- table(year_3_df$'EXIT-Sinc Prog Rel Healthy')
+total_count <- sum(!is.na(year_3_df$'EXIT-Sinc Prog Rel Healthy'))
+frequency_percentages <- (Pro_Rel_Healthy_value_counts / total_count) * 100
+print(Pro_Rel_Healthy_value_counts)
+print(frequency_percentages)
+
+Pro_Learn_Skills_value_counts <- table(year_3_df$'EXIT-Since Prog Learned Skills')
+total_count <- sum(!is.na(year_3_df$'EXIT-Since Prog Learned Skills'))
+frequency_percentages <- (Pro_Learn_Skills_value_counts / total_count) * 100
+print(Pro_Learn_Skills_value_counts)
+print(frequency_percentages)
+
+Pro_Use_Skills_value_counts <- table(year_3_df$'EXIT-Since Prog Use Skills')
+total_count <- sum(!is.na(year_3_df$'EXIT-Since Prog Use Skills'))
+frequency_percentages <- (Pro_Use_Skills_value_counts / total_count) * 100
+print(Pro_Use_Skills_value_counts)
+print(frequency_percentages)
+
+Pro_Helpful_value_counts <- table(year_3_df$'EXIT-Prog Helpful')
+total_count <- sum(!is.na(year_3_df$'EXIT-Prog Helpful'))
+frequency_percentages <- (Pro_Helpful_value_counts / total_count) * 100
+print(Pro_Helpful_value_counts)
+print(frequency_percentages)
+
+# Year 3 T-Test
+t.test(year_3_df$'ENT-Mar Feel Love', year_3_df$'EXIT-Mar Feel Love', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Mar Living Together Same', year_3_df$'EXIT-Mar Living Together Same', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Couples Cheat', year_3_df$'EXIT-Couples Cheat', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Couples Call Names', year_3_df$'EXIT-Couples Call Names', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Boy Girlfriend Hit', year_3_df$'EXIT-Boy Girlfriend Hit', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Couples Threaten', year_3_df$'EXIT-Couples Threaten', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Couples Encourage', year_3_df$'EXIT-Couples Encourage', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Couples Spend Time', year_3_df$'EXIT-Couples Spend Time', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Couples Fear', year_3_df$'EXIT-Couples Fear', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Rel Talk Imp', year_3_df$'EXIT-Rel Talk Imp', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Rel Talk Feels', year_3_df$'EXIT-Rel Talk Feels', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Rel Talk Probs', year_3_df$'EXIT-Rel Talk Probs', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Rel Deserv Hit', year_3_df$'EXIT-Rel Deserv Hit', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Rel Phys Violence', year_3_df$'EXIT-Rel Phys Violence', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Rel Date Violence', year_3_df$'EXIT-Rel Date Violence', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Rel Afraid', year_3_df$'EXIT-Rel Afraid', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Sex Attracted', year_3_df$'EXIT-Sex Attracted', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Sex Hard Say No', year_3_df$'EXIT-Sex Hard Say No', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Deal Conflicts', year_3_df$'EXIT-Deal Conflicts', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Make Rel Last', year_3_df$'EXIT-Make Rel Last', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Skills Lasting Rel', year_3_df$'EXIT-Skills Lasting Rel', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Warn Bad Rel', year_3_df$'EXIT-Warn Bad Rel', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Rec Warn Bad', year_3_df$'EXIT-Rec Warn Bad', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Avoid Fight', year_3_df$'EXIT-Avoid Fight', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Listening Opinion', year_3_df$'EXIT-Listening Opinion', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Working Probs', year_3_df$'EXIT-Working Probs', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Boy Girlfriend Feel Good', year_3_df$'EXIT-Boy Girlfriend Feel Good', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Boy Girlfriend Pressure', year_3_df$'EXIT-Boy Girlfriend Pressure', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Boy Girlfriend Control', year_3_df$'EXIT-Boy Girlfriend Control', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Boy Girlfriend Look Bad', year_3_df$'EXIT-Boy Girlfriend Look Bad', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Boy Girlfriend Put Down', year_3_df$'EXIT-Boy Girlfriend Put Down', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Boy Girlfriend Insults', year_3_df$'EXIT-Boy Girlfriend Insults', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Boy Girlfriend Insults', year_3_df$'EXIT-Boy Girlfriend Insults', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Boy Girlfriend Keep Feels', year_3_df$'EXIT-Boy Girlfriend Keep Feels', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Boy Girlfriend Discuss', year_3_df$'EXIT-Boy Girlfriend Discuss', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Boy Girlfriend Hit', year_3_df$'EXIT-Boy Girlfriend Hit', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Boy Girlfriend Hit', year_3_df$'EXIT-Boy Girlfriend Hit', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Boy Girlfriend Argue', year_3_df$'EXIT-Boy Girlfriend Argue', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Boy Girlfriend Yell', year_3_df$'ENT-Boy Girlfriend Yell', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Boy Girlfriend Silent', year_3_df$'EXIT-Boy Girlfriend Silent', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Boy Girlfriend Count On', year_3_df$'EXIT-Boy Girlfriend Count On', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Boy Girlfriend Talk Matter', year_3_df$'EXIT-Boy Girlfriend Talk Matter', na.rm = TRUE, paired = TRUE)
+
+t.test(year_3_df$'ENT-Boy Girlfriend Share Feels', year_3_df$'EXIT-Boy Girlfriend Share Feels', na.rm = TRUE, paired = TRUE)
+
+```
+
+```{r, Total}
+
+# Define Total variables across All Years
+Totalvariables <- c('ENT-Mar Feel Love', 'EXIT-Mar Feel Love', 'ENT-Mar Living Together Same', 'EXIT-Mar Living Together Same','ENT-Couples Cheat','EXIT-Couples Cheat', 'ENT-Couples Call Names','EXIT-Couples Call Names', 'ENT-Couples Threaten', 'EXIT-Couples Threaten','ENT-Couples Hit', 'EXIT-Couples Hit','ENT-Couples Encourage', 'EXIT-Couples Encourage','ENT-Couples Spend Time','EXIT-Couples Spend Time', 'ENT-Couples Fear', 'EXIT-Couples Fear','ENT-Rel Talk Imp', 'EXIT-Rel Talk Imp','ENT-Rel Talk Feels', 'EXIT-Rel Talk Feels','ENT-Rel Talk Probs','EXIT-Rel Talk Probs', 'ENT-Rel Deserv Hit',  'EXIT-Rel Deserv Hit','ENT-Rel Phys Violence', 'EXIT-Rel Phys Violence', 'ENT-Rel Date Violence', 'EXIT-Rel Date Violence', 'ENT-Rel Afraid', 'EXIT-Rel Afraid','ENT-Sex Attracted', 'EXIT-Sex Attracted','ENT-Sex Hard Say No', 'EXIT-Sex Hard Say No','ENT-Sex Can Say No','EXIT-Sex Can Say No', 'ENT-Deal Conflicts',  'EXIT-Deal Conflicts','ENT-Make Rel Last', 'EXIT-Make Rel Last','ENT-Stable Long Term Rel', 'EXIT-Stable Long Term Rel','ENT-Skills Lasting Rel','EXIT-Skills Lasting Rel', 'ENT-Warn Bad Rel','EXIT-Warn Bad Rel', 'ENT-Rec Warn Bad', 'EXIT-Rec Warn Bad','ENT-Avoid Fight','EXIT-Avoid Fight', 'ENT-Listening Opinion', 'EXIT-Listening Opinion','ENT-Working Probs', 'EXIT-Working Probs','ENT-Boy Girlfriend Feel Good',  'EXIT-Boy Girlfriend Feel Good','ENT-Boy Girlfriend Pressure', 'EXIT-Boy Girlfriend Pressure','ENT-Boy Girlfriend Control', 'EXIT-Boy Girlfriend Control','ENT-Boy Girlfriend Look Bad', 'EXIT-Boy Girlfriend Look Bad','ENT-Boy Girlfriend Put Down', 'EXIT-Boy Girlfriend Put Down','ENT-Boy Girlfriend Insults','EXIT-Boy Girlfriend Insults', 'ENT-Boy Girlfriend Keep Feels','EXIT-Boy Girlfriend Keep Feels', 'ENT-Boy Girlfriend Discuss',  'EXIT-Boy Girlfriend Discuss','ENT-Boy Girlfriend Hit', 'EXIT-Boy Girlfriend Hit','ENT-Boy Girlfriend Argue', 'EXIT-Boy Girlfriend Argue', 'ENT-Boy Girlfriend Yell','EXIT-Boy Girlfriend Yell', 'ENT-Boy Girlfriend Silent', 'EXIT-Boy Girlfriend Silent','ENT-Boy Girlfriend Count On', 'EXIT-Boy Girlfriend Count On','ENT-Boy Girlfriend Talk Matter','EXIT-Boy Girlfriend Talk Matter', 'ENT-Boy Girlfriend Share Feels', 'EXIT-Boy Girlfriend Share Feels','EXIT-Sinc Prog Rel Healthy', 'EXIT-Since Prog Learned Skills', 'EXIT-Since Prog Use Skills', 'EXIT-Prog Helpful','EXIT-Since Prog End Emotional',	'EXIT-Since Prog End Not Working','EXIT-Since Prog End Physical')
+
+# Calculate Total Year 1-3 mean
+Total_mean <- colMeans(Nform_dataY3[Totalvariables], na.rm = TRUE)
+
+print(Total_mean)
+
+# Print Nform_dataY3
+print(Nform_dataY3)
+
+# Describe Nform_dataY3
+summary(Nform_dataY3)
+
+### Code for Year 1 to 3 Satisfaction Frequency Percentages
+
+Pro_Rel_Healthy_value_counts <- table(Nform_dataY3$'EXIT-Sinc Prog Rel Healthy')
+total_count <- sum(!is.na(Nform_dataY3$'EXIT-Sinc Prog Rel Healthy'))
+frequency_percentages <- (Pro_Rel_Healthy_value_counts / total_count) * 100
+print(Pro_Rel_Healthy_value_counts)
+print(frequency_percentages)
+
+Pro_Learn_Skills_value_counts <- table(Nform_dataY3$'EXIT-Since Prog Learned Skills')
+total_count <- sum(!is.na(Nform_dataY3$'EXIT-Since Prog Learned Skills'))
+frequency_percentages <- (Pro_Learn_Skills_value_counts / total_count) * 100
+print(Pro_Learn_Skills_value_counts)
+print(frequency_percentages)
+
+Pro_Use_Skills_value_counts <- table(Nform_dataY3$'EXIT-Since Prog Use Skills')
+total_count <- sum(!is.na(Nform_dataY3$'EXIT-Since Prog Use Skills'))
+frequency_percentages <- (Pro_Use_Skills_value_counts / total_count) * 100
+print(Pro_Use_Skills_value_counts)
+print(frequency_percentages)
+
+Pro_Helpful_value_counts <- table(Nform_dataY3$'EXIT-Prog Helpful')
+total_count <- sum(!is.na(Nform_dataY3$'EXIT-Prog Helpful'))
+frequency_percentages <- (Pro_Helpful_value_counts / total_count) * 100
+print(Pro_Helpful_value_counts)
+print(frequency_percentages)
+
+# Year 1-3 T-Test
+library(effsize) #Use to calculate cohen's D
+
+t.test(Nform_dataY3$'ENT-Mar Feel Love', Nform_dataY3$'EXIT-Mar Feel Love', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Mar Feel Love', Nform_dataY3$'EXIT-Mar Feel Love',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Mar Living Together Same', Nform_dataY3$'EXIT-Mar Living Together Same', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Mar Living Together Same', Nform_dataY3$'EXIT-Mar Living Together Same',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Couples Cheat', Nform_dataY3$'EXIT-Couples Cheat', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Couples Cheat', Nform_dataY3$'EXIT-Couples Cheat',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Couples Call Names', Nform_dataY3$'EXIT-Couples Call Names', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Couples Call Names', Nform_dataY3$'EXIT-Couples Call Names',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Boy Girlfriend Hit', Nform_dataY3$'EXIT-Boy Girlfriend Hit', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Boy Girlfriend Hit', Nform_dataY3$'EXIT-Boy Girlfriend Hit',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Couples Threaten', Nform_dataY3$'EXIT-Couples Threaten', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Couples Threaten', Nform_dataY3$'EXIT-Couples Threaten',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Couples Encourage', Nform_dataY3$'EXIT-Couples Encourage', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Couples Encourage', Nform_dataY3$'EXIT-Couples Encourage',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Couples Spend Time', Nform_dataY3$'EXIT-Couples Spend Time', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Couples Spend Time', Nform_dataY3$'EXIT-Couples Spend Time',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Couples Fear', Nform_dataY3$'EXIT-Couples Fear', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Couples Fear', Nform_dataY3$'EXIT-Couples Fear',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Rel Talk Imp', Nform_dataY3$'EXIT-Rel Talk Imp', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Rel Talk Imp', Nform_dataY3$'EXIT-Rel Talk Imp',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Rel Talk Feels', Nform_dataY3$'EXIT-Rel Talk Feels', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Rel Talk Feels', Nform_dataY3$'EXIT-Rel Talk Feels',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Rel Talk Probs', Nform_dataY3$'EXIT-Rel Talk Probs', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Rel Talk Probs', Nform_dataY3$'EXIT-Rel Talk Probs',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Rel Deserv Hit', Nform_dataY3$'EXIT-Rel Deserv Hit', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Rel Deserv Hit', Nform_dataY3$'EXIT-Rel Deserv Hit',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Rel Phys Violence', Nform_dataY3$'EXIT-Rel Phys Violence', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Rel Phys Violence', Nform_dataY3$'EXIT-Rel Phys Violence',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Rel Date Violence', Nform_dataY3$'EXIT-Rel Date Violence', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Rel Date Violence', Nform_dataY3$'EXIT-Rel Date Violence',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Rel Afraid', Nform_dataY3$'EXIT-Rel Afraid', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Rel Afraid', Nform_dataY3$'EXIT-Rel Afraid',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Sex Attracted', Nform_dataY3$'EXIT-Sex Attracted', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Sex Attracted', Nform_dataY3$'EXIT-Sex Attracted',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Sex Hard Say No', Nform_dataY3$'EXIT-Sex Hard Say No', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Sex Hard Say No', Nform_dataY3$'EXIT-Sex Hard Say No',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Deal Conflicts', Nform_dataY3$'EXIT-Deal Conflicts', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Deal Conflicts', Nform_dataY3$'EXIT-Deal Conflicts', na.rm = TRUE)
+
+
+t.test(Nform_dataY3$'ENT-Make Rel Last', Nform_dataY3$'EXIT-Make Rel Last', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Make Rel Last', Nform_dataY3$'EXIT-Make Rel Last',na.rm = TRUE)
+
+
+t.test(Nform_dataY3$'ENT-Skills Lasting Rel', Nform_dataY3$'EXIT-Skills Lasting Rel', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Skills Lasting Rel', Nform_dataY3$'EXIT-Skills Lasting Rel',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Warn Bad Rel', Nform_dataY3$'EXIT-Warn Bad Rel', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Warn Bad Rel', Nform_dataY3$'EXIT-Warn Bad Rel',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Rec Warn Bad', Nform_dataY3$'EXIT-Rec Warn Bad', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Rec Warn Bad', Nform_dataY3$'EXIT-Rec Warn Bad',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Avoid Fight', Nform_dataY3$'EXIT-Avoid Fight', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Avoid Fight', Nform_dataY3$'EXIT-Avoid Fight',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Listening Opinion', Nform_dataY3$'EXIT-Listening Opinion', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Listening Opinion', Nform_dataY3$'EXIT-Listening Opinion',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Working Probs', Nform_dataY3$'EXIT-Working Probs', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Working Probs', Nform_dataY3$'EXIT-Working Probs',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Boy Girlfriend Feel Good', Nform_dataY3$'EXIT-Boy Girlfriend Feel Good', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Boy Girlfriend Feel Good', Nform_dataY3$'EXIT-Boy Girlfriend Feel Good',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Boy Girlfriend Pressure', Nform_dataY3$'EXIT-Boy Girlfriend Pressure', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Boy Girlfriend Pressure', Nform_dataY3$'EXIT-Boy Girlfriend Pressure',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Boy Girlfriend Control', Nform_dataY3$'EXIT-Boy Girlfriend Control', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Boy Girlfriend Control', Nform_dataY3$'EXIT-Boy Girlfriend Control',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Boy Girlfriend Look Bad', Nform_dataY3$'EXIT-Boy Girlfriend Look Bad', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Boy Girlfriend Look Bad', Nform_dataY3$'EXIT-Boy Girlfriend Look Bad',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Boy Girlfriend Put Down', Nform_dataY3$'EXIT-Boy Girlfriend Put Down', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Boy Girlfriend Put Down', Nform_dataY3$'EXIT-Boy Girlfriend Put Down',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Boy Girlfriend Insults', Nform_dataY3$'EXIT-Boy Girlfriend Insults', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Boy Girlfriend Insults', Nform_dataY3$'EXIT-Boy Girlfriend Insults',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Boy Girlfriend Insults', Nform_dataY3$'EXIT-Boy Girlfriend Insults', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Boy Girlfriend Insults', Nform_dataY3$'EXIT-Boy Girlfriend Insults',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Boy Girlfriend Keep Feels', Nform_dataY3$'EXIT-Boy Girlfriend Keep Feels', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Boy Girlfriend Keep Feels', Nform_dataY3$'EXIT-Boy Girlfriend Keep Feels',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Boy Girlfriend Discuss', Nform_dataY3$'EXIT-Boy Girlfriend Discuss', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Boy Girlfriend Discuss', Nform_dataY3$'EXIT-Boy Girlfriend Discuss',na.rm = TRUE)
+
+
+t.test(Nform_dataY3$'ENT-Boy Girlfriend Hit', Nform_dataY3$'EXIT-Boy Girlfriend Hit', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Boy Girlfriend Hit', Nform_dataY3$'EXIT-Boy Girlfriend Hit',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Boy Girlfriend Argue', Nform_dataY3$'EXIT-Boy Girlfriend Argue', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Boy Girlfriend Argue', Nform_dataY3$'EXIT-Boy Girlfriend Argue',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Boy Girlfriend Yell', Nform_dataY3$'ENT-Boy Girlfriend Yell', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Boy Girlfriend Yell', Nform_dataY3$'ENT-Boy Girlfriend Yell',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Boy Girlfriend Silent', Nform_dataY3$'EXIT-Boy Girlfriend Silent', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Boy Girlfriend Silent', Nform_dataY3$'EXIT-Boy Girlfriend Silent',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Boy Girlfriend Count On', Nform_dataY3$'EXIT-Boy Girlfriend Count On', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Boy Girlfriend Count On', Nform_dataY3$'EXIT-Boy Girlfriend Count On',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Boy Girlfriend Talk Matter', Nform_dataY3$'EXIT-Boy Girlfriend Talk Matter', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Boy Girlfriend Talk Matter', Nform_dataY3$'EXIT-Boy Girlfriend Talk Matter',na.rm = TRUE)
+
+t.test(Nform_dataY3$'ENT-Boy Girlfriend Share Feels', Nform_dataY3$'EXIT-Boy Girlfriend Share Feels', na.rm = TRUE, paired = TRUE)
+cohen.d(Nform_dataY3$'ENT-Boy Girlfriend Share Feels', Nform_dataY3$'EXIT-Boy Girlfriend Share Feels',na.rm = TRUE)
+
+```
+
